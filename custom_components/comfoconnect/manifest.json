@@ -3,7 +3,7 @@
   "name": "Zehnder ComfoAir Q",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/comfoconnect",
-  "requirements": ["git+https://github.com/rfaelens/aiocomfoconnect.git@patch-1"],
+  "requirements": ["git+https://github.com/rfaelens/aiocomfoconnect.git@patch-1#aiocomfoconnect==0.1.5"],
   "codeowners": ["@michaelarnauts"],
   "iot_class": "local_push",
   "loggers": ["aiocomfoconnect"],
