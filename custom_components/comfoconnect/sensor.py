@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Callable
 
 from aiocomfoconnect.sensors import (
     SENSOR_ANALOG_INPUT_1,
@@ -37,6 +38,7 @@ from aiocomfoconnect.sensors import (
     SENSOR_GHE_PRESENT,
     SENSORS,
     Sensor as AioComfoConnectSensor,
+    SENSOR_AIRFLOW_CONSTRAINTS,
 )
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -82,6 +84,7 @@ class ComfoconnectSensorEntityDescription(
     """Describes ComfoConnect sensor entity."""
 
     throttle: bool = False
+    mapping: Callable = None
 
 
 SENSOR_TYPES = (
@@ -352,6 +355,14 @@ SENSOR_TYPES = (
         entity_category=EntityCategory.DIAGNOSTIC,
         throttle=True,
     ),
+    ComfoconnectSensorEntityDescription(
+        key=SENSOR_AIRFLOW_CONSTRAINTS,
+        icon="mdi:fan-alert",
+        name="Airflow Constraint",
+        ccb_sensor=SENSORS.get(SENSOR_AIRFLOW_CONSTRAINTS),
+        entity_category=EntityCategory.DIAGNOSTIC,
+        mapping=lambda x: "" if x is None else x[0],
+    ),
 )
 
 
@@ -375,6 +386,7 @@ class ComfoConnectSensor(SensorEntity):
     """Representation of a ComfoConnect sensor."""
 
     _attr_should_poll = False
+    _attr_has_entity_name = True
     entity_description: ComfoconnectSensorEntityDescription
 
     def __init__(
@@ -386,7 +398,7 @@ class ComfoConnectSensor(SensorEntity):
         """Initialize the ComfoConnect sensor."""
         self._ccb = ccb
         self.entity_description = description
-        self._attr_unique_id = f"{config_entry.unique_id}-{description.key}"
+        self._attr_unique_id = f"{self._ccb.uuid}-{description.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._ccb.uuid)},
         )
@@ -425,5 +437,8 @@ class ComfoConnectSensor(SensorEntity):
             value,
         )
 
-        self._attr_native_value = value
+        if self.entity_description.mapping:
+            self._attr_native_value = self.entity_description.mapping(value)
+        else:
+            self._attr_native_value = value
         self.schedule_update_ha_state()
